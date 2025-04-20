@@ -1,0 +1,135 @@
+:root {
+  --theme-primary: rgb(0, 79, 66);
+  --theme-secondary: rgb(255, 255, 255);
+  --theme-tertiary: rgb(244, 206, 20);
+  --theme-primary-light: #008c751a;
+  --text-dark: #242529;
+  --text-gray: #777;
+  --text-gray-2: #666;
+  --text-gray-3: #bfbfbf;
+  --bg-gray: #efefef;
+  --border-col-primary: #dbdbdb;
+  --box-shadow-primary: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --box-shadow-secondary: rgba(0, 18, 46, 0.16) 0px 8px 18px 0;
+  --external-border-radius: 16px;
+  --external-border-radius-2: 8px;
+  --border-radius-btn: 50px;
+  
+  --btn-disabled: #8f8f8f;
+  --btn-border-radius: 25px;
+
+  /* Cards */
+  --card-border-radius: 8px;
+
+  /* Reviews */
+  --star-filled: rgb(255, 181, 0);
+  --star-empty-col: rgb(255, 181, 0);
+
+  /* Edit/ Delete */
+  --save-btn: #B39DDB;
+  --edit-btn: #EFC53F;
+  --delete-btn: #FF5252;
+
+  --messaging-border-col: #e0e0e0;
+  --messaging-border-col-2: #8b8b8b;
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+
+#message-notification {
+    margin: 0;
+    width: 100%;
+    height: 50px;
+    background-color: var(--theme-primary);
+    margin-right: 15px;
+}
+.menu-icons {
+    display: flex;
+    align-items: center;
+}
+.message-icon {
+    position: static;
+}
+.message-btn {
+    position: relative;
+    margin-top: 5px;
+    cursor: pointer;
+}
+.message-dropdown-wrapper {
+    float: right;
+    width: 38px;
+    position: relative;
+}
+.message-dropdown {
+    display: none;
+    position: absolute;
+    height: auto;
+    bottom: 10px;
+    right: 10px;
+    z-index: 2;
+    -webkit-transition: all 0.3s ease;
+    transition: all 0.3s ease;
+}
+.message-dropdown.show-message-dropdown {
+    position: fixed;
+    display: flex;
+    flex-flow: row-reverse nowrap;
+    cursor: auto;
+    z-index: 1000;
+}
+                    
+/* Search */
+.search-user {
+    border-radius: var(--external-border-radius-2);
+    padding: 12px 12px;
+    margin-bottom: 0px !important;
+}
+.search-user .search-user-inner {
+    position: relative;
+}
+.search-user input[type="text"] {
+    width: 100%;
+    padding: 8px 12px 8px 33px;
+    font-size: 13px;
+    border-radius: 50px;
+    border: 1px solid var(--messaging-border-col);
+    transition: .3s;
+}
+.search-user input[type="text"]:focus {
+    padding: 8px 42px 8px 12px;
+    border: 1px solid var(--messaging-border-col-2);
+    outline: none;
+}
+.search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    color: rgb(111, 111, 111);
+    transition: 0.3s;
+    pointer-events: none; /* Prevent icon from blocking input clicks */
+}
+
+.search-user input:focus + .search-icon {
+    left: auto;
+    right: 10px;
+}
