@@ -75,7 +75,7 @@ function ConversationTab({
       <div className="conversation-header">
         <img 
           className="avatar" 
-          src={userPhoto.startsWith("https://") ? userPhoto : `serve_image.php?photo=${userPhoto}`}
+          src={userPhoto.startsWith("https://") ? userPhoto : `https://satya.pl/serve_image.php?photo=${userPhoto}`}
           alt={`${username}'s avatar`}
         />
         <span className="conversation-username">{username}</span>

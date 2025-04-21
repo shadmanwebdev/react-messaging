@@ -4,12 +4,33 @@ import { compareDateTimes, formatDate, formatTime } from '../utils/dateUtils';
 import { checkCookie, getCookie } from '../utils/cookieUtils';
 import { cleanMessage } from '../utils/messageUtils';
 import { useWebSocket } from '../contexts/WebSocketContext';
+import { OverlayScrollbarsComponent } from 'overlayscrollbars-react';
+import 'overlayscrollbars/styles/overlayscrollbars.css';
 
+    
 function MessageList({ messages: initialMessages, conversationId }) {
     const messageListRef = useRef(null);
     const [messages, setMessages] = useState(initialMessages || []);
     const [typingIndicator, setTypingIndicator] = useState('');
     const { socket, currentUserId } = useWebSocket();
+    // Configuration options for OverlayScrollbars
+    const scrollOptions = {
+        scrollbars: {
+        autoHide: "leave",
+        theme: "os-theme-light"
+        },
+        // Disable horizontal scrolling
+        overflow: {
+            x: "hidden",
+            y: "scroll"
+        }
+    };
+    
+    const scrollContainerStyle = {
+        height: "300px",
+        maxHeight: "50vh",
+        padding: "20px"
+    };
     
     useEffect(() => {
       // Update messages when initialMessages change
@@ -94,18 +115,25 @@ function MessageList({ messages: initialMessages, conversationId }) {
     });
   
     return (
-        <div className="message-list" ref={messageListRef}>
-            {processedMessages.map((message, index) => (
-                <Message 
-                    key={`${message.conversation_id}-${message.sender_id}-${index}`}
-                    message={message}
-                    isCurrentUser={message.sender_id == currentUserId}
-                />
-            ))}
-            {typingIndicator && (
-                <div className="typing-indicator-message">{typingIndicator}</div>
-            )}
-        </div>
+        <OverlayScrollbarsComponent 
+            className="unread-inner-div" 
+            id="unread-conversations"
+            options={scrollOptions}
+            style={scrollContainerStyle}
+        >
+            <div className="message-list" ref={messageListRef}>
+                {processedMessages.map((message, index) => (
+                    <Message 
+                        key={`${message.conversation_id}-${message.sender_id}-${index}`}
+                        message={message}
+                        isCurrentUser={message.sender_id == currentUserId}
+                    />
+                ))}
+                {typingIndicator && (
+                    <div className="typing-indicator-message">{typingIndicator}</div>
+                )}
+            </div>
+        </OverlayScrollbarsComponent>
     );
 }
 

@@ -4,10 +4,6 @@ const https = require('https');
 const socketIo = require('socket.io');
 const mysql = require('mysql2/promise'); // Add MySQL for database operations
 
-const http = require('http');
-const useHttps = process.env.USE_HTTPS === 'true';
-
-
 // Create an instance of Express
 const app = express();
 
@@ -18,16 +14,15 @@ const options = {
     ca: fs.readFileSync('/etc/letsencrypt/live/vps-08e5f5ed.vps.ovh.net/chain.pem')
 };
 
-// Create  server
-const server = useHttps
-    ? https.createServer(options, app)
-    : http.createServer(app);
+// Create the HTTPS server
+const server = https.createServer(options, app);
 
-// Socket.io
+// Attach Socket.io to the HTTPS server
 const io = socketIo(server, {
     cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
+        origin: "http://localhost:3000",
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
@@ -384,8 +379,6 @@ io.on('connection', async (socket) => {
 });
 
 // Start the server
-
-// Start the server
 server.listen(3001, '0.0.0.0', () => {
-    console.log('WebSocket server listening on port 3001');
+    console.log('WebSocket server listening on port 3000');
 });

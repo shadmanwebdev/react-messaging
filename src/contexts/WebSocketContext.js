@@ -17,16 +17,20 @@ export function WebSocketProvider({ children }) {
 
     useEffect(() => {
         // Connect to the WebSocket server with the proper URL
-        const socketInstance = io('wss://satya.pl:3001');
+        const socketInstance = io('wss://satya.pl:3001', {
+            withCredentials: true,
+            transports: ['websocket', 'polling']
+        });
         
         socketInstance.on('connect', () => {
             console.log('Connected to WebSocket server');
             setConnected(true);
             
             // Get user ID from hidden input or cookie
-            const userId = getCookie('user_id');
+            // const userId = getCookie('user_id');
+            const userId = 7;
             if (userId) {
-                setCurrentUserId(7);
+                setCurrentUserId(userId);
                 // Register user when connected
                 socketInstance.emit('register_user', userId);
             }

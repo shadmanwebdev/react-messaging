@@ -1,20 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import ConversationTab from './ConversationTab';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import Notification from './Notification';
 import { truncateHTML } from '../utils/messageUtils';
 import { FaComment, FaSearch } from 'react-icons/fa';
+import { OverlayScrollbarsComponent } from 'overlayscrollbars-react';
+import 'overlayscrollbars/styles/overlayscrollbars.css';
 
 function MessageCenter() {
   const [conversations, setConversations] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [notification, setNotification] = useState({ message: '', type: '' });
-  const unreadDropdownRef = useRef(null);
   
   const { 
     socket, 
     currentUserId, 
-    unreadCount, 
+    unreadCount,
     unreadConversations, 
     loadUnreadConversations 
   } = useWebSocket();
@@ -23,6 +24,7 @@ function MessageCenter() {
     if (socket) {
       // Listen for conversation creation
       const conversationCreatedHandler = (response) => {
+        console.log('Conversation created response:', response);
         if (response.success) {
           // Create conversation tab with data from socket response
           setConversations(prev => {
@@ -48,14 +50,15 @@ function MessageCenter() {
   
   const openMessagingPopup = (userId, username, userPhoto) => {
     if (socket && currentUserId) {
-      socket.emit('create_conversation', {
-        user_id: currentUserId,
+      socket.emit('get_conversation', {
+        current_user_id: currentUserId,
         recipient_id: userId,
         recipient_username: username,
         recipient_photo: userPhoto
       });
     }
-    setShowDropdown(false);
+    // Remove this line to keep the dropdown open when a conversation is selected
+    // setShowDropdown(false);
   };
   
   const closeConversation = (conversationId) => {
@@ -76,23 +79,24 @@ function MessageCenter() {
     setTimeout(() => setNotification({ message: '', type: '' }), 3000);
   };
   
-  useEffect(() => {
-    // Initialize overlay scrollbar for unread conversations dropdown if it exists
-    if (showDropdown && unreadDropdownRef.current && window.OverlayScrollbars) {
-      const osInstance = window.OverlayScrollbars(unreadDropdownRef.current, {
-        scrollbars: {
-          autoHide: "leave",
-          theme: "os-theme-light"
-        }
-      });
-      
-      return () => {
-        if (osInstance) {
-          osInstance.destroy();
-        }
-      };
+  // Configuration options for OverlayScrollbars
+  const scrollOptions = {
+    scrollbars: {
+      autoHide: "leave",
+      theme: "os-theme-light"
+    },
+    // Disable horizontal scrolling
+    overflow: {
+      x: "hidden",
+      y: "scroll"
     }
-  }, [showDropdown, unreadConversations]);
+  };
+  
+  // Style for the scrollable container
+  const scrollContainerStyle = {
+    height: "300px",
+    maxHeight: "50vh"
+  };
   
   return (
     <div className="message-center">
@@ -128,7 +132,13 @@ function MessageCenter() {
               </div>
               <div id="search-results" className="search-results"></div>
             </div>
-            <div className="unread-inner-div" ref={unreadDropdownRef} id="unread-conversations">
+            {/* OverlayScrollbarsComponent with fixed height and y-axis scrolling only */}
+            <OverlayScrollbarsComponent 
+              className="unread-inner-div" 
+              id="unread-conversations"
+              options={scrollOptions}
+              style={scrollContainerStyle}
+            >
               {unreadConversations.map((conversation) => {
                 let lastMessage = conversation.last_message || "No messages yet";
                 lastMessage = truncateHTML(lastMessage, 30);
@@ -150,7 +160,7 @@ function MessageCenter() {
                         <img 
                           src={conversation.last_sender_photo.startsWith("https://") 
                             ? conversation.last_sender_photo 
-                            : `serve_image.php?photo=${conversation.last_sender_photo}`}
+                            : `https://satya.pl/serve_image.php?photo=${conversation.last_sender_photo}`}
                           alt={conversation.last_sender_username}
                         />
                       </div>
@@ -166,12 +176,8 @@ function MessageCenter() {
                   </div>
                 );
               })}
-            </div>
-          </div>
-        </div>
-      )}
-      
-      <div className="messaging-popup-wrapper">
+            </OverlayScrollbarsComponent>
+          </div>      <div className="messaging-popup-wrapper">
         {conversations.map(conv => (
           <ConversationTab
             key={conv.conversation_id}
@@ -182,6 +188,10 @@ function MessageCenter() {
           />
         ))}
       </div>
+        </div>
+      )}
+      
+
       
       {notification.message && (
         <Notification message={notification.message} type={notification.type} />
