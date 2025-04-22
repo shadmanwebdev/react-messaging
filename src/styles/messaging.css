@@ -1,11 +1,39 @@
+.messages-container {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+}
+.conversations-btn {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    width: 100%;
+    padding: 8px 15px 8px 15px;
+    background-color: var(--theme-secondary);
+    color: #000000;
+    font-size: 14px;
+    border-bottom: 1px solid var(--messaging-border-col); 
+    cursor: pointer;
+}
+.conversations-btn .avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    margin-right: 11px;
+    margin-left: 0;
+}
+.messaging-popup-wrapper {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: flex-end;
+}
 /* Message wrapper message-input-area 70vh */
 .unread-messages {
     display: flex;
     flex-flow: column nowrap;
     width: 280px;
-    background-color: #fff;
-    box-shadow: var(--box-shadow-secondary);
-    border-radius: var(--external-border-radius-2);
     margin-right: 10px;
 }
 .unread-inner-div {
@@ -29,7 +57,8 @@
 }
 .unread-message .conversation-username {
     color: var(--text-dark);
-    font-weight: 600;
+    font-weight: 600;    
+    margin-bottom: 5px;
 }
 .unread-messages .message-item:last-child .unread-message {
     margin-bottom: 0px;
@@ -99,11 +128,6 @@
 }
 
 
-.messaging-popup-wrapper {
-    display: flex;
-    flex-flow: row nowrap;
-    align-items: flex-end;
-}
 .modal-content {
     width: 320px;    
     padding: 15px;
@@ -183,6 +207,9 @@
     color: #000;
 }
 
+.messaging-popup .unread-inner-div {
+    min-height: 500px;
+}
 .messaging-popup .minimize {
     position: absolute;
     right: 40px;
@@ -419,7 +446,7 @@
     padding: 5px;
     border-bottom: 1px solid var(--messaging-border-col);
 }
-#send-message-btn {
+.send-message-btn {
     margin-left: auto;
     background: var(--theme-primary);
     color: var(--theme-secondary);

@@ -94,102 +94,110 @@ function MessageCenter() {
   
   // Style for the scrollable container
   const scrollContainerStyle = {
-    height: "300px",
-    maxHeight: "50vh"
+    height: "550px"
   };
   
   return (
     <div className="message-center">
-      <div id="message-notification" className="message-icon">
-        <div 
-          className={`message-btn ${showDropdown ? 'show-message-dropdown' : ''}`} 
-          onClick={toggleDropdown}
-        >
-          <FaComment />
-          {unreadCount > 0 && (
-            <span className="unread-indicator" id="unread-indicator">{unreadCount}</span>
+
+        <div className="messages-container">  
+          <div className="message-dropdown-wrapper">   
+            <div className={`conversations-btn`} onClick={toggleDropdown}>
+              <img
+                className="avatar"
+                src="https://satya.pl/serve_image.php?photo=Lukrecja_bae1734781188.png"
+                alt="User avatar"
+              />
+              {/* <span className="conversation-username">lukrecja</span> */}
+              {/* {unreadCount > 0 && (
+                <span className="unread-indicator" id="unread-indicator">{unreadCount}</span>
+              )} */}
+              {/* <div id="message-tooltip" className={`tooltip ${showDropdown ? '' : 'hidden'}`}> */}
+                {unreadCount > 0 ? `${unreadCount} unread message(s)` : 'No unread messages'}
+              {/* </div> */}
+            </div> 
+            {showDropdown && (
+              <div className="message-dropdown show-message-dropdown">
+                <div className="unread-messages">
+                  
+
+
+                  <div className="search-user">
+                    <div className="search-user-inner">
+                      <input
+                        type="text"
+                        className="user-search"
+                        id="user-search"
+                        placeholder="Search username or email..."
+                      />
+                      
+                      <FaSearch className="search-icon" />
+                    </div>
+                    <div id="search-results" className="search-results"></div>
+                  </div>
+                  {/* OverlayScrollbarsComponent with fixed height and y-axis scrolling only */}
+                  <OverlayScrollbarsComponent 
+                    className="unread-inner-div" 
+                    id="unread-conversations"
+                    options={scrollOptions}
+                    style={scrollContainerStyle}
+                  >
+                    {unreadConversations.map((conversation) => {
+                      let lastMessage = conversation.last_message || "No messages yet";
+                      lastMessage = truncateHTML(lastMessage, 30);
+                      
+                      return (
+                        <div 
+                          key={conversation.last_sender_id} 
+                          className="unread-message conversation-item conversation-listener"
+                          data-user-id={conversation.last_sender_id}
+                          data-user-photo={conversation.last_sender_photo}
+                          onClick={() => openMessagingPopup(
+                            conversation.last_sender_id, 
+                            conversation.last_sender_username, 
+                            conversation.last_sender_photo
+                          )}
+                        >
+                          <div className='msg-col-1'>
+                            <div className='msg-photo'>
+                              <img 
+                                src={conversation.last_sender_photo.startsWith("https://") 
+                                  ? conversation.last_sender_photo 
+                                  : `https://satya.pl/serve_image.php?photo=${conversation.last_sender_photo}`}
+                                alt={conversation.last_sender_username}
+                              />
+                            </div>
+                          </div>
+                          <div className='msg-col-right'>
+                            <div className="msg-content">
+                              <div className="conversation-username">{conversation.last_sender_username}</div> 
+                              <div className="last-message" 
+                                dangerouslySetInnerHTML={{ __html: lastMessage }}></div>
+                            </div>
+                            <span className="unread-count">{conversation.unread_count}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </OverlayScrollbarsComponent>
+                </div>      
+              </div>
+            )}
+          </div>
+          {showDropdown && (
+            <div className="messaging-popup-wrapper">
+              {conversations.map(conv => (
+                <ConversationTab
+                  key={conv.conversation_id}
+                  conversationId={conv.conversation_id}
+                  username={conv.recipient_username || conv.username}
+                  userPhoto={conv.recipient_photo || conv.user_photo}
+                  onClose={closeConversation}
+                />
+              ))}
+            </div>
           )}
         </div>
-
-        <div id="message-tooltip" className={`tooltip ${showDropdown ? '' : 'hidden'}`}>
-          {unreadCount > 0 ? `You have ${unreadCount} unread message(s)` : 'No unread messages'}
-        </div>
-      </div>
-      
-      {showDropdown && (
-        <div className="message-dropdown show-message-dropdown">     
-          <div className="unread-messages">
-            <div className="search-user">
-              <div className="search-user-inner">
-                <input
-                  type="text"
-                  className="user-search"
-                  id="user-search"
-                  placeholder="Search username or email..."
-                />
-                
-                <FaSearch className="search-icon" />
-              </div>
-              <div id="search-results" className="search-results"></div>
-            </div>
-            {/* OverlayScrollbarsComponent with fixed height and y-axis scrolling only */}
-            <OverlayScrollbarsComponent 
-              className="unread-inner-div" 
-              id="unread-conversations"
-              options={scrollOptions}
-              style={scrollContainerStyle}
-            >
-              {unreadConversations.map((conversation) => {
-                let lastMessage = conversation.last_message || "No messages yet";
-                lastMessage = truncateHTML(lastMessage, 30);
-                
-                return (
-                  <div 
-                    key={conversation.last_sender_id} 
-                    className="unread-message conversation-item conversation-listener"
-                    data-user-id={conversation.last_sender_id}
-                    data-user-photo={conversation.last_sender_photo}
-                    onClick={() => openMessagingPopup(
-                      conversation.last_sender_id, 
-                      conversation.last_sender_username, 
-                      conversation.last_sender_photo
-                    )}
-                  >
-                    <div className='msg-col-1'>
-                      <div className='msg-photo'>
-                        <img 
-                          src={conversation.last_sender_photo.startsWith("https://") 
-                            ? conversation.last_sender_photo 
-                            : `https://satya.pl/serve_image.php?photo=${conversation.last_sender_photo}`}
-                          alt={conversation.last_sender_username}
-                        />
-                      </div>
-                    </div>
-                    <div className='msg-col-right'>
-                      <div className="msg-content">
-                        <div className="conversation-username">{conversation.last_sender_username}</div> 
-                        <div className="last-message" 
-                          dangerouslySetInnerHTML={{ __html: lastMessage }}></div>
-                      </div>
-                      <span className="unread-count">{conversation.unread_count}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </OverlayScrollbarsComponent>
-          </div>      <div className="messaging-popup-wrapper">
-        {conversations.map(conv => (
-          <ConversationTab
-            key={conv.conversation_id}
-            conversationId={conv.conversation_id}
-            username={conv.recipient_username || conv.username}
-            userPhoto={conv.recipient_photo || conv.user_photo}
-            onClose={closeConversation}
-          />
-        ))}
-      </div>
-        </div>
-      )}
       
 
       

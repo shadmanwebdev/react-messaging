@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useWebSocket } from '../contexts/WebSocketContext';
+import { FaBold, FaLink, FaItalic, FaUnderline, FaStrikethrough, FaPaperPlane } from 'react-icons/fa';
 
 function MessageInput({ conversationId }) {
   const contentEditableRef = useRef(null);
@@ -95,25 +96,29 @@ function MessageInput({ conversationId }) {
       <div className="typing-indicator" style={{ display: 'none' }}></div>
       <div className="formatting-toolbar">
         <button className="format-btn" data-format="bold" onClick={() => handleFormat('bold')}>
-          <i className="fas fa-bold"></i>
+          <FaBold />
         </button>
         <button className="format-btn" data-format="italic" onClick={() => handleFormat('italic')}>
-          <i className="fas fa-italic"></i>
+          <FaItalic />
         </button>
         <button className="format-btn" data-format="underline" onClick={() => handleFormat('underline')}>
-          <i className="fas fa-underline"></i>
+          <FaUnderline />
         </button>
         <button className="format-btn" data-format="strikethrough" onClick={() => handleFormat('strikethrough')}>
-          <i className="fas fa-strikethrough"></i>
+          <FaStrikethrough />
+        </button>
+        <button className="format-btn" data-format="link" onClick={() => handleFormat('link')}>
+          <FaLink aria-hidden="true" />
         </button>
         <button 
           onClick={sendMessage} 
           className="send-message-btn custom-btn btn-16"
           data-send-conversation-id={conversationId}
         >
-          <i className="fas fa-paper-plane"></i>
+          <FaPaperPlane className="send-icon" />
         </button>
       </div>
+
       <div 
         id="message-input"
         className={`message-input message-input-${conversationId}`}

@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import { useWebSocket } from '../contexts/WebSocketContext';
+import { FaWindowMinimize } from 'react-icons/fa';
+import { HiOutlineX } from 'react-icons/hi'; // or MdClose from react-icons/md
+import { MdClose } from 'react-icons/md';
 
 function ConversationTab({ 
   conversationId, 
@@ -80,10 +83,11 @@ function ConversationTab({
         />
         <span className="conversation-username">{username}</span>
         <span className="minimize" onClick={handleMinimize}>
-          <i className="fa-regular fa-window-minimize"></i>
+          <FaWindowMinimize />
         </span>
         <span className="close" onClick={handleClose}>
-          <i className="fa-regular fa-x"></i>
+          <HiOutlineX />
+          {/* Or use <MdClose /> instead */}
         </span>
       </div>
       <div className="conversation-body">
