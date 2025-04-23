@@ -4,39 +4,25 @@ import { compareDateTimes, formatDate, formatTime } from '../utils/dateUtils';
 import { checkCookie, getCookie } from '../utils/cookieUtils';
 import { cleanMessage } from '../utils/messageUtils';
 import { useWebSocket } from '../contexts/WebSocketContext';
-import { OverlayScrollbarsComponent } from 'overlayscrollbars-react';
-import 'overlayscrollbars/styles/overlayscrollbars.css';
 import { animateScroll } from 'react-scroll';
 
-    
 function MessageList({ messages: initialMessages, conversationId }) {
     const messageListRef = useRef(null);
-    const osInstance = useRef(null);
     const [messages, setMessages] = useState(initialMessages || []);
     const [typingIndicator, setTypingIndicator] = useState('');
     const { socket, currentUserId } = useWebSocket();
-    // Configuration options for OverlayScrollbars.current
-    const scrollOptions = {
-        scrollbars: {
-            autoHide: "leave",
-            theme: "os-theme-light"
-        },
-        // Disable horizontal scrolling
-        overflow: {
-            x: "hidden",
-            y: "scroll"
-        }
-    };
     
     const scrollContainerStyle = {
-        height: "300px",
-        maxHeight: "50vh",
-        padding: "20px"
+        height: "510px",
+        maxHeight: "80vh",
+        padding: "20px",
+        overflowY: "auto",
+        overflowX: "hidden"
     };
     
     useEffect(() => {
-      // Update messages when initialMessages change
-      setMessages(initialMessages || []);
+        // Update messages when initialMessages change
+        setMessages(initialMessages || []);
     }, [initialMessages]);
     
     useEffect(() => {
@@ -81,12 +67,12 @@ function MessageList({ messages: initialMessages, conversationId }) {
             };
         
             socket.on('receive_message', receiveMessageHandler);
-            socket.on('message_sent', messageSentHandler); // Add this line
+            socket.on('message_sent', messageSentHandler);
             socket.on('user_typing', userTypingHandler);
             
             return () => {
                 socket.off('receive_message', receiveMessageHandler);
-                socket.off('message_sent', messageSentHandler); // Add this line
+                socket.off('message_sent', messageSentHandler);
                 socket.off('user_typing', userTypingHandler);
                 socket.off('typing');
             };
@@ -94,15 +80,13 @@ function MessageList({ messages: initialMessages, conversationId }) {
     }, [socket, conversationId, currentUserId]);
     
     const scrollToBottom = () => {
-        if (osInstance.current) {
-            // Get the actual DOM element for the viewport
-            const osElement = osInstance.current.getElement();
-            if (osElement) {
-                const viewport = osElement.querySelector('.os-viewport');
-                if (viewport) {
-                    viewport.scrollTop = viewport.scrollHeight;
-                }
-            }
+        // Using react-scroll's animateScroll to scroll to bottom
+        if (messageListRef.current) {
+            animateScroll.scrollToBottom({
+                containerId: 'message-container',
+                duration: 150,
+                smooth: true
+            });
         }
     };
     
@@ -129,14 +113,13 @@ function MessageList({ messages: initialMessages, conversationId }) {
     });
   
     return (
-        <OverlayScrollbarsComponent 
-            className="unread-inner-div" 
-            id="unread-conversations"
-            options={scrollOptions}
+        <div 
+            id="message-container"
+            className="message-container" 
             style={scrollContainerStyle}
-            ref={osInstance}
+            ref={messageListRef}
         >
-            <div className="message-list" ref={messageListRef}>
+            <div className="message-list">
                 {processedMessages.map((message, index) => (
                     <Message 
                         key={`${message.conversation_id}-${message.sender_id}-${index}`}
@@ -148,7 +131,7 @@ function MessageList({ messages: initialMessages, conversationId }) {
                     <div className="typing-indicator-message">{typingIndicator}</div>
                 )}
             </div>
-        </OverlayScrollbarsComponent>
+        </div>
     );
 }
 
