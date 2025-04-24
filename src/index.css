@@ -143,3 +143,20 @@ code {
     left: auto;
     right: 10px;
 }
+
+/* For WebKit browsers (Chrome, Safari, newer Edge) */
+::-webkit-scrollbar {
+    width: 3px; /* Width of the scrollbar */
+}
+::-webkit-scrollbar-thumb {
+    background-color: #707070; /* Color of the scrollbar thumb */
+    border-radius: 3px; /* Rounded corners for the thumb */
+}
+::-webkit-scrollbar-track {
+    background-color: #ffffff; /* Color of the scrollbar track */
+}
+/* For Firefox */
+* {
+    scrollbar-width: thin; /* or auto */
+    scrollbar-color: #b3b3b3 #ffffff;
+}

@@ -6,6 +6,10 @@ function MessageInput({ conversationId }) {
   const contentEditableRef = useRef(null);
   const [typingTimer, setTypingTimer] = useState(null);
   const { socket, currentUserId, getOtherParticipantId } = useWebSocket();
+
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false); // Define isLinkModalOpen and setIsLinkModalOpen
+  const [linkText, setLinkText] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
   
   useEffect(() => {
     // Handle message sent confirmation
@@ -36,27 +40,27 @@ function MessageInput({ conversationId }) {
       // Get the other participant ID
       const recipientId = await getOtherParticipantId(conversationId);
       
-      // Emit typing indicator
-      socket.emit('typing', {
-        conversation_id: conversationId,
-        sender_id: currentUserId,
-        sender_name: 'You', 
-        recipient_id: recipientId,
-        is_typing: true
-      });
+      // // Emit typing indicator
+      // socket.emit('typing', {
+      //   conversation_id: conversationId,
+      //   sender_id: currentUserId,
+      //   sender_name: 'You', 
+      //   recipient_id: recipientId,
+      //   is_typing: true
+      // });
       
-      // Set timer to stop typing indicator after delay
-      const timer = setTimeout(() => {
-        socket.emit('typing', {
-          conversation_id: conversationId,
-          sender_id: currentUserId,
-          sender_name: 'You',
-          recipient_id: recipientId,
-          is_typing: false
-        });
-      }, 2000);
+      // // Set timer to stop typing indicator after delay
+      // const timer = setTimeout(() => {
+      //   socket.emit('typing', {
+      //     conversation_id: conversationId,
+      //     sender_id: currentUserId,
+      //     sender_name: 'You',
+      //     recipient_id: recipientId,
+      //     is_typing: false
+      //   });
+      // }, 2000);
       
-      setTypingTimer(timer);
+      // setTypingTimer(timer);
     } catch (error) {
       console.error('Error handling typing:', error);
     }
@@ -80,7 +84,39 @@ function MessageInput({ conversationId }) {
   };
   
   const handleFormat = (format) => {
-    document.execCommand(format, false, null);
+    if (format === 'link') {
+      // Get the currently selected text
+      const selection = window.getSelection();
+      const selectedText = selection.toString();
+
+      if (selectedText) {
+        setLinkText(selectedText);
+        setIsLinkModalOpen(true);
+      } else {
+        // Optionally, you could prompt the user to select text first
+        alert('Please select the text you want to turn into a link.');
+        contentEditableRef.current.focus();
+      }
+    } else {
+      document.execCommand(format, false, null);
+      contentEditableRef.current.focus();
+    }
+  };
+
+  const handleInsertLink = () => {
+    if (linkUrl) {
+      document.execCommand('createLink', false, linkUrl);
+    }
+    setIsLinkModalOpen(false);
+    setLinkText('');
+    setLinkUrl('');
+    contentEditableRef.current.focus();
+  };
+
+  const handleCloseLinkModal = () => {
+    setIsLinkModalOpen(false);
+    setLinkText('');
+    setLinkUrl('');
     contentEditableRef.current.focus();
   };
   
@@ -127,6 +163,21 @@ function MessageInput({ conversationId }) {
         onInput={handleTyping}
         onKeyDown={handleKeyDown}
       />
+      {isLinkModalOpen && (
+        <div className="link-modal">
+          <label htmlFor="link-url">URL:</label>
+          <input
+            type="text"
+            id="link-url"
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+          />
+          <div className="link-modal-buttons">
+            <button onClick={handleInsertLink}>Insert</button>
+            <button onClick={handleCloseLinkModal}>Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

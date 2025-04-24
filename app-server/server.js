@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const https = require('https');
 const socketIo = require('socket.io');
-const mysql = require('mysql2/promise'); // Add MySQL for database operations
+const mysql = require('mysql2/promise');
 
 // Create an instance of Express
 const app = express();
@@ -380,5 +380,5 @@ io.on('connection', async (socket) => {
 
 // Start the server
 server.listen(3001, '0.0.0.0', () => {
-    console.log('WebSocket server listening on port 3000');
+    console.log('WebSocket server listening on port 3001');
 });

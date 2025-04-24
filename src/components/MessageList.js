@@ -83,7 +83,7 @@ function MessageList({ messages: initialMessages, conversationId }) {
         // Using react-scroll's animateScroll to scroll to bottom
         if (messageListRef.current) {
             animateScroll.scrollToBottom({
-                containerId: 'message-container',
+                containerId: `message-container-${conversationId}`,
                 duration: 150,
                 smooth: true
             });
@@ -114,7 +114,7 @@ function MessageList({ messages: initialMessages, conversationId }) {
   
     return (
         <div 
-            id="message-container"
+            id={`message-container-${conversationId}`}
             className="message-container" 
             style={scrollContainerStyle}
             ref={messageListRef}
