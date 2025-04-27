@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ConversationTab from './ConversationTab';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import Notification from './Notification';
@@ -11,6 +11,9 @@ function MessageCenter() {
   const [conversations, setConversations] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [notification, setNotification] = useState({ message: '', type: '' });
+  const [searchResults, setSearchResults] = useState({ conversations: [], newUsers: [] });
+  const [searchTerm, setSearchTerm] = useState('');
+  const searchTimeout = useRef(null);
   
   const { 
     socket, 
@@ -40,13 +43,55 @@ function MessageCenter() {
         }
       };
       
+      // Listen for search results
+      const searchResultsHandler = (response) => {
+        console.log('Search results received:', response);
+        if (response.success) {
+          setSearchResults({
+            conversations: response.conversations || [],
+            newUsers: response.newUsers || []
+          });
+        } else {
+          showNotification('Failed to search users', 'error');
+        }
+      };
+      
       socket.on('conversation_created', conversationCreatedHandler);
+      socket.on('search_results', searchResultsHandler);
       
       return () => {
         socket.off('conversation_created', conversationCreatedHandler);
+        socket.off('search_results', searchResultsHandler);
       };
     }
   }, [socket]);
+  
+  const handleSearch = (e) => {
+    const query = e.target.value.trim();
+    setSearchTerm(query);
+    
+    // Clear any existing timeout
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+    
+    // Only search if query is at least 3 characters
+    if (query.length >= 3) {
+      // Debounce the search request
+      searchTimeout.current = setTimeout(() => {
+        if (socket && currentUserId) {
+          console.log('Sending search request: ', query, 'by: ', currentUserId);
+          socket.emit('search_users', {
+            user_id: currentUserId,
+            search_term: query
+          });
+        }
+      }, 300);
+    } else if (query.length === 0) {
+      // If search field is cleared, reset to unread conversations
+      loadUnreadConversations();
+    }
+  };
   
   const openMessagingPopup = (userId, username, userPhoto) => {
     if (socket && currentUserId) {
@@ -57,8 +102,6 @@ function MessageCenter() {
         recipient_photo: userPhoto
       });
     }
-    // Remove this line to keep the dropdown open when a conversation is selected
-    // setShowDropdown(false);
   };
   
   const closeConversation = (conversationId) => {
@@ -71,6 +114,8 @@ function MessageCenter() {
     setShowDropdown(!showDropdown);
     if (!showDropdown) {
       loadUnreadConversations();
+      setSearchTerm('');
+      setSearchResults({ conversations: [], newUsers: [] });
     }
   };
   
@@ -97,9 +142,17 @@ function MessageCenter() {
     height: "550px"
   };
   
+  // Get displayed users (from search or unread conversations)
+  const displayedConversations = searchTerm.length >= 3 
+    ? searchResults.conversations 
+    : unreadConversations;
+    
+  const displayedNewUsers = searchTerm.length >= 3 
+    ? searchResults.newUsers 
+    : [];
+  
   return (
     <div className="message-center">
-
         <div className="messages-container">  
           <div className="message-dropdown-wrapper">   
             <div className={`conversations-btn`} onClick={toggleDropdown}>
@@ -108,20 +161,11 @@ function MessageCenter() {
                 src="https://satya.pl/serve_image.php?photo=Lukrecja_bae1734781188.png"
                 alt="User avatar"
               />
-              {/* <span className="conversation-username">lukrecja</span> */}
-              {/* {unreadCount > 0 && (
-                <span className="unread-indicator" id="unread-indicator">{unreadCount}</span>
-              )} */}
-              {/* <div id="message-tooltip" className={`tooltip ${showDropdown ? '' : 'hidden'}`}> */}
-                {unreadCount > 0 ? `${unreadCount} unread message(s)` : 'No unread messages'}
-              {/* </div> */}
+              {unreadCount > 0 ? `${unreadCount} unread message(s)` : 'No unread messages'}
             </div> 
             {showDropdown && (
               <div className="message-dropdown show-message-dropdown">
                 <div className="unread-messages">
-                  
-
-
                   <div className="search-user">
                     <div className="search-user-inner">
                       <input
@@ -129,56 +173,102 @@ function MessageCenter() {
                         className="user-search"
                         id="user-search"
                         placeholder="Search username or email..."
+                        value={searchTerm}
+                        onChange={handleSearch}
                       />
-                      
                       <FaSearch className="search-icon" />
                     </div>
                     <div id="search-results" className="search-results"></div>
                   </div>
-                  {/* OverlayScrollbarsComponent with fixed height and y-axis scrolling only */}
+                  
                   <OverlayScrollbarsComponent 
                     className="unread-inner-div" 
                     id="unread-conversations"
                     options={scrollOptions}
                     style={scrollContainerStyle}
                   >
-                    {unreadConversations.map((conversation) => {
+                    {/* Display conversations from search results or unread conversations */}
+                    {displayedConversations.map((conversation) => {
                       let lastMessage = conversation.last_message || "No messages yet";
                       lastMessage = truncateHTML(lastMessage, 30);
                       
+                      const photoUrl = conversation.last_sender_photo ? 
+                        (conversation.last_sender_photo.startsWith("https://") 
+                          ? conversation.last_sender_photo 
+                          : `https://satya.pl/serve_image.php?photo=${conversation.last_sender_photo}`)
+                        : (conversation.photo && conversation.photo.startsWith("https://")
+                          ? conversation.photo
+                          : `https://satya.pl/serve_image.php?photo=${conversation.photo || 'default.jpg'}`);
+                      
+                      const userId = conversation.last_sender_id || conversation.user_id;
+                      const username = conversation.last_sender_username || conversation.username;
+                      const userPhoto = conversation.last_sender_photo || conversation.photo;
+                      
                       return (
                         <div 
-                          key={conversation.last_sender_id} 
+                          key={`conv-${userId}-${conversation.conversation_id || Date.now()}`}
                           className="unread-message conversation-item conversation-listener"
-                          data-user-id={conversation.last_sender_id}
-                          data-user-photo={conversation.last_sender_photo}
+                          data-user-id={userId}
+                          data-user-photo={userPhoto}
                           onClick={() => openMessagingPopup(
-                            conversation.last_sender_id, 
-                            conversation.last_sender_username, 
-                            conversation.last_sender_photo
+                            userId, 
+                            username, 
+                            userPhoto
                           )}
                         >
                           <div className='msg-col-1'>
                             <div className='msg-photo'>
                               <img 
-                                src={conversation.last_sender_photo.startsWith("https://") 
-                                  ? conversation.last_sender_photo 
-                                  : `https://satya.pl/serve_image.php?photo=${conversation.last_sender_photo}`}
-                                alt={conversation.last_sender_username}
+                                src={photoUrl}
+                                alt={username}
                               />
                             </div>
                           </div>
                           <div className='msg-col-right'>
                             <div className="msg-content">
-                              <div className="conversation-username">{conversation.last_sender_username}</div> 
+                              <div className="conversation-username">{username}</div> 
                               <div className="last-message" 
                                 dangerouslySetInnerHTML={{ __html: lastMessage }}></div>
                             </div>
-                            <span className="unread-count">{conversation.unread_count}</span>
+                            {conversation.unread_count > 0 && (
+                              <span className="unread-count">{conversation.unread_count}</span>
+                            )}
                           </div>
                         </div>
                       );
                     })}
+                    
+                    {/* Display new users from search */}
+                    {displayedNewUsers.map((user) => (
+                      <div 
+                        key={`new-${user.user_id}`}
+                        className="unread-message conversation-item conversation-listener"
+                        data-user-id={user.user_id}
+                        data-user-photo={user.photo}
+                        onClick={() => openMessagingPopup(
+                          user.user_id, 
+                          user.username, 
+                          user.photo
+                        )}
+                      >
+                        <div className='msg-col-1'>
+                          <div className='msg-photo'>
+                            <img 
+                              src={user.photo.startsWith("https://") 
+                                ? user.photo 
+                                : `https://satya.pl/serve_image.php?photo=${user.photo || 'default.jpg'}`}
+                              alt={user.username}
+                            />
+                          </div>
+                        </div>
+                        <div className='msg-col-right'>
+                          <div className="msg-content">
+                            <div className="conversation-username">{user.username}</div> 
+                            <div className="last-message">No conversation yet</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </OverlayScrollbarsComponent>
                 </div>      
               </div>
@@ -198,8 +288,6 @@ function MessageCenter() {
             </div>
           )}
         </div>
-      
-
       
       {notification.message && (
         <Notification message={notification.message} type={notification.type} />

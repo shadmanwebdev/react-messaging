@@ -46,7 +46,90 @@ io.on('connection', async (socket) => {
         userSockets[user_id] = socket.id;
         console.log(`User ${user_id} registered with socket ID ${socket.id}`);
     });
-
+    
+    // User search handler
+    socket.on('search_users', async (data) => {
+        try {
+            const { user_id, search_term } = data;
+            
+            if (!user_id || !search_term || search_term.length < 3) {
+                socket.emit('search_results', {
+                    success: false,
+                    error: 'Invalid search parameters'
+                });
+                return;
+            }
+            
+            const connection = await pool.getConnection();
+            
+            // Format search term for LIKE query
+            const formattedSearchTerm = `%${search_term}%`;
+            
+            // Query to get conversations matching the search term
+            const [conversations] = await connection.execute(`
+                SELECT 
+                    c.conversation_id,
+                    u.username,
+                    u.email,
+                    u.user_id,
+                    u.photo,
+                    COUNT(CASE WHEN m.is_read = 0 AND m.sender_id != ? THEN 1 END) AS unread_count,
+                    (
+                        SELECT m_last.content
+                        FROM Messages m_last
+                        WHERE m_last.conversation_id = c.conversation_id
+                        ORDER BY m_last.sent_at DESC
+                        LIMIT 1
+                    ) AS last_message
+                FROM Conversations c
+                JOIN ConversationParticipants cp ON c.conversation_id = cp.conversation_id
+                JOIN ConversationParticipants cp2 ON c.conversation_id = cp2.conversation_id
+                JOIN users u ON cp2.user_id = u.user_id
+                LEFT JOIN Messages m ON c.conversation_id = m.conversation_id
+                WHERE cp.user_id = ?
+                    AND cp2.user_id != ?
+                    AND (u.username LIKE ? OR u.email LIKE ?)
+                GROUP BY c.conversation_id, u.username, u.user_id, u.photo
+                ORDER BY c.updated_at DESC
+            `, [user_id, user_id, user_id, formattedSearchTerm, formattedSearchTerm]);
+            
+            // Extract user IDs from found conversations
+            const existingUserIds = conversations.map(conv => conv.user_id);
+            
+            // Query to get users who are NOT in a conversation with the current user
+            const [newUsers] = await connection.execute(`
+                SELECT u.user_id, u.username, u.email, u.photo
+                FROM users u
+                WHERE (u.username LIKE ? OR u.email LIKE ?)
+                    AND u.user_id != ?
+                    AND u.user_id NOT IN (
+                        SELECT cp2.user_id
+                        FROM ConversationParticipants cp
+                        JOIN ConversationParticipants cp2 ON cp.conversation_id = cp2.conversation_id
+                        WHERE cp.user_id = ? AND cp2.user_id != ?
+                    )
+                LIMIT 10
+            `, [formattedSearchTerm, formattedSearchTerm, user_id, user_id, user_id]);
+            
+            connection.release();
+            
+            // Send search results back to client
+            socket.emit('search_results', {
+                success: true,
+                conversations: conversations,
+                newUsers: newUsers
+            });
+            console.log('Conversations: ', conversations);
+            
+        } catch (error) {
+            console.error('Search error:', error);
+            socket.emit('search_results', {
+                success: false,
+                error: 'Failed to search users'
+            });
+        }
+    });
+    
     // Get or create conversation
     socket.on('get_conversation', async (data) => {
         try {

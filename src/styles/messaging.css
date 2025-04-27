@@ -339,6 +339,9 @@
     display: inline-block;
     word-wrap: break-word;
 }
+.message-content a {
+    color: var(--theme-secondary);
+}
 .message-time {   
     position: absolute;
     top: -28px;
