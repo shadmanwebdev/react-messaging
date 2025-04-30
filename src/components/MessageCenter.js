@@ -189,21 +189,19 @@ function MessageCenter() {
                   >
                     {/* Display conversations from search results or unread conversations */}
                     {displayedConversations.map((conversation) => {
-                      let lastMessage = conversation.last_message || "No messages yet";
-                      lastMessage = truncateHTML(lastMessage, 30);
+                     let lastMessage = conversation.last_message || "No messages yet";
+                     lastMessage = truncateHTML(lastMessage, 30);
+                     
                       
-                      const photoUrl = conversation.last_sender_photo ? 
-                        (conversation.last_sender_photo.startsWith("https://") 
-                          ? conversation.last_sender_photo 
-                          : `https://satya.pl/serve_image.php?photo=${conversation.last_sender_photo}`)
-                        : (conversation.photo && conversation.photo.startsWith("https://")
-                          ? conversation.photo
-                          : `https://satya.pl/serve_image.php?photo=${conversation.photo || 'default.jpg'}`);
-                      
-                      const userId = conversation.last_sender_id || conversation.user_id;
-                      const username = conversation.last_sender_username || conversation.username;
-                      const userPhoto = conversation.last_sender_photo || conversation.photo;
-                      
+                     const lastParticipant = conversation.participants?.[0] || {};
+                     const photoUrl = lastParticipant.photo?.startsWith("https://")
+                       ? lastParticipant.photo
+                       : `https://satya.pl/serve_image.php?photo=${lastParticipant.photo || 'default.jpg'}`;
+                     
+                     const userId = lastParticipant.user_id;
+                     const username = lastParticipant.username;
+                     const userPhoto = lastParticipant.photo;
+                     
                       return (
                         <div 
                           key={`conv-${userId}-${conversation.conversation_id || Date.now()}`}

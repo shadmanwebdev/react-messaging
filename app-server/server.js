@@ -41,6 +41,11 @@ let userSockets = {};
 io.on('connection', async (socket) => {
     console.log('A user connected: ', socket.id);
 
+    socket.on('register_site', (site_uuid) => {
+        socket.site_uuid = site_uuid; // Store the site UUID in the socket object
+        console.log(`Site registered with UUID: ${site_uuid}, Socket ID: ${socket.id}`);
+    });
+        
     // Register user
     socket.on('register_user', (user_id) => {
         userSockets[user_id] = socket.id;
@@ -134,23 +139,26 @@ io.on('connection', async (socket) => {
     socket.on('get_conversation', async (data) => {
         try {
             const connection = await pool.getConnection();
+            const site_uuid = socket.site_uuid;
             
             // Check if a conversation exists between these users
-            const [existingConversations] = await connection.execute(`
-                SELECT c.conversation_id 
-                FROM Conversations c
-                JOIN ConversationParticipants cp1 ON c.conversation_id = cp1.conversation_id
-                JOIN ConversationParticipants cp2 ON c.conversation_id = cp2.conversation_id
-                WHERE cp1.user_id = ? AND cp2.user_id = ?
-                AND (SELECT COUNT(*) FROM ConversationParticipants WHERE conversation_id = c.conversation_id) = 2
-            `, [data.current_user_id, data.recipient_id]);
+             const [existingConversations] = await connection.execute(`
+                 SELECT c.conversation_id
+                 FROM Conversations c
+                 JOIN ConversationParticipants cp1 ON c.conversation_id = cp1.conversation_id
+                 JOIN ConversationParticipants cp2 ON c.conversation_id = cp2.conversation_id
+                 WHERE cp1.user_id = ? AND cp2.user_id = ?
+                 AND c.site_uuid = ?
+                 AND (SELECT COUNT(*) FROM ConversationParticipants WHERE conversation_id = c.conversation_id) = 2
+             `, [data.current_user_id, data.recipient_id, socket.site_uuid]);
             
             let conversation_id;
             
             if (existingConversations.length === 0) {
                 // Create new conversation
                 const [result] = await connection.execute(
-                    'INSERT INTO Conversations (created_at) VALUES (NOW())'
+                    'INSERT INTO Conversations (site_uuid, created_at) VALUES (?, NOW())',
+                    [data.site_uuid]
                 );
                 conversation_id = result.insertId;
                 
@@ -316,68 +324,67 @@ io.on('connection', async (socket) => {
             console.error(err);
         }
     });
-    
+        
     socket.on('getUnreadConversations', async (user_id) => {
         try {
             const connection = await pool.getConnection();
+        
+            // Step 1: Get all conversations for the user for the current site
             const [conversations] = await connection.execute(`
-                SELECT 
-                    c.conversation_id,
-                    COUNT(*) AS unread_count,
-
-                    -- Last message info, excluding logged-in user
-                    (
-                        SELECT m2.sender_id
-                        FROM Messages m2
-                        WHERE m2.conversation_id = c.conversation_id AND m2.sender_id != ?
-                        ORDER BY m2.sent_at DESC
-                        LIMIT 1
-                    ) AS last_sender_id,
-
-                    (
-                        SELECT m2.content
-                        FROM Messages m2
-                        WHERE m2.conversation_id = c.conversation_id AND m2.sender_id != ?
-                        ORDER BY m2.sent_at DESC
-                        LIMIT 1
-                    ) AS last_message,
-
-                    -- Get last sender's username
-                    (
-                        SELECT u2.username
-                        FROM Messages m3
-                        JOIN users u2 ON u2.user_id = m3.sender_id
-                        WHERE m3.conversation_id = c.conversation_id AND m3.sender_id != ?
-                        ORDER BY m3.sent_at DESC
-                        LIMIT 1
-                    ) AS last_sender_username,
-
-                    -- Get last sender's photo
-                    (
-                        SELECT u2.photo
-                        FROM Messages m3
-                        JOIN users u2 ON u2.user_id = m3.sender_id
-                        WHERE m3.conversation_id = c.conversation_id AND m3.sender_id != ?
-                        ORDER BY m3.sent_at DESC
-                        LIMIT 1
-                    ) AS last_sender_photo
-
+                SELECT c.conversation_id
                 FROM Conversations c
                 JOIN ConversationParticipants cp ON cp.conversation_id = c.conversation_id
-                JOIN Messages m ON m.conversation_id = c.conversation_id
-
-                WHERE cp.user_id = ? AND m.sender_id != ? AND m.is_read = 0
-
-                GROUP BY c.conversation_id
-                ORDER BY c.updated_at DESC
-            `, [user_id, user_id, user_id, user_id, user_id, user_id]);
+                WHERE cp.user_id = ? AND c.site_uuid = ?
+            `, [user_id, socket.site_uuid]);
+                    
+            const results = [];
+        
+            for (const conv of conversations) {
+            const { conversation_id } = conv;
+        
+            // Step 2: Get last message and unread count
+            const [[lastMessage]] = await connection.execute(`
+                SELECT m.message_id, m.content, m.sent_at, m.sender_id, u.username, u.photo
+                FROM Messages m
+                JOIN users u ON u.user_id = m.sender_id
+                WHERE m.conversation_id = ?
+                ORDER BY m.sent_at DESC
+                LIMIT 1
+            `, [conversation_id]);
+        
+            const [[unreadCount]] = await connection.execute(`
+                SELECT COUNT(*) as unread_count
+                FROM Messages
+                WHERE conversation_id = ? AND is_read = 0 AND sender_id != ?
+            `, [conversation_id, user_id]);
+        
+            // Step 3: Get participants except current user
+            const [participants] = await connection.execute(`
+                SELECT u.user_id, u.username, u.photo
+                FROM ConversationParticipants cp
+                JOIN users u ON u.user_id = cp.user_id
+                WHERE cp.conversation_id = ? AND u.user_id != ?
+            `, [conversation_id, user_id]);
+        
+            results.push({
+                conversation_id,
+                last_message: lastMessage?.content || null,
+                last_sender_id: lastMessage?.sender_id || null,
+                last_sender_username: lastMessage?.username || null,
+                last_sender_photo: lastMessage?.photo || null,
+                unread_count: unreadCount.unread_count || 0,
+                participants, // array of other participants
+            });
+            }
+        
             connection.release();
-            socket.emit('unreadConversations', { conversations });
+        
+            socket.emit('unreadConversations', { conversations: results });
         } catch (err) {
             console.error(err);
         }
     });
-
+         
     socket.on('getConversationParticipants', async ({ conversation_id }) => {
         try {
             const connection = await pool.getConnection();
