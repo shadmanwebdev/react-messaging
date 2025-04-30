@@ -18,7 +18,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build:wp": "BUILD_PATH='./wordpress-plugin/assets' react-scripts build",
+    "build:wp": "SET BUILD_PATH=./wordpress-plugin/assets && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

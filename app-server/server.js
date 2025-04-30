@@ -315,6 +315,7 @@ io.on('connection', async (socket) => {
         return result[0].unreadCount;
     };
 
+    // Get unread count
     socket.on('getUnreadCount', async (user_id) => {
         try {
             const unreadCount = await getUnreadCount(user_id);
@@ -324,7 +325,8 @@ io.on('connection', async (socket) => {
             console.error(err);
         }
     });
-        
+    
+    // Get unread conversations
     socket.on('getUnreadConversations', async (user_id) => {
         try {
             const connection = await pool.getConnection();
@@ -385,6 +387,7 @@ io.on('connection', async (socket) => {
         }
     });
          
+    // Get unread participants
     socket.on('getConversationParticipants', async ({ conversation_id }) => {
         try {
             const connection = await pool.getConnection();
