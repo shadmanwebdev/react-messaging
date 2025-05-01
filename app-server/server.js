@@ -42,7 +42,7 @@ io.on('connection', async (socket) => {
     console.log('A user connected: ', socket.id);
 
     socket.on('register_site', (site_uuid) => {
-        socket.site_uuid = site_uuid; // Store the site UUID in the socket object
+        socket.site_uuid = site_uuid;
         console.log(`Site registered with UUID: ${site_uuid}, Socket ID: ${socket.id}`);
     });
         
