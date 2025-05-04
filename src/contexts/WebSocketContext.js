@@ -34,6 +34,9 @@ export function WebSocketProvider({ children }) {
                 // Register user when connected
                 socketInstance.emit('register_user', userId);
             }
+            
+            const siteUUID = window.my_plugin_data?.site_uuid;
+            
             if (siteUUID) {
                 socketInstance.emit('register_site', siteUUID);
                 console.log('Emitting register_site event with UUID:', siteUUID);
